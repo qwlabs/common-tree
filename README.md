@@ -15,7 +15,7 @@ Useful java tools
 <dependency>
     <groupId>com.qwlabs</groupId>
     <artifactId>common-tree</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.1</version>
     <type>pom</type>
 </dependency>
 ```
@@ -23,7 +23,7 @@ Useful java tools
 ## Gradle
 
 ```gradle
-implementation 'com.qwlabs:common-tree:0.1.0'
+implementation 'com.qwlabs:common-tree:0.1.1'
 ```
 
 # Usage see test

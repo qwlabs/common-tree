@@ -15,12 +15,13 @@ import java.util.function.Supplier;
 
 @SuppressWarnings("HiddenField")
 public final class Tree<S> extends TreeNode<S> {
-    private static final Tree EMPTY_TREE = new Tree<>();
+    private static final Tree EMPTY_TREE = new Tree<>(null);
+    private final Function<S, Object> identityFunction;
+    private final Supplier<Map<Object, S>> parentMapping = Suppliers.memoize(this::loadParentMapping);
 
-    private final Supplier<Map<S, S>> parentMapping = Suppliers.memoize(this::loadParentMapping);
-
-    public Tree() {
+    public Tree(Function<S, Object> identityFunction) {
         super(null);
+        this.identityFunction = identityFunction;
     }
 
     @Override
@@ -41,17 +42,19 @@ public final class Tree<S> extends TreeNode<S> {
         do {
             parents.add(maxParent);
 //            find parent's parent
-            maxParent = parentMapping.get().get(maxParent);
+            maxParent = parentMapping.get().get(identityFunction.apply(maxParent));
         } while (maxParent != null);
         Collections.reverse(parents);
         return parents;
     }
 
-    private Map<S, S> loadParentMapping() {
-        Map<S, S> parentMapping = Maps.newHashMap();
+    private Map<Object, S> loadParentMapping() {
+        Map<Object, S> parentMapping = Maps.newHashMap();
         getChildren().forEach(child -> {
-            parentMapping.put(child.getSource(), null);
-            child.acceptDeep((p, c) -> parentMapping.put(c, p));
+            parentMapping.put(identityFunction.apply(child.getSource()), null);
+            child.acceptDeep((parent, c) -> {
+                parentMapping.put(identityFunction.apply(c), parent);
+            });
         });
         return parentMapping;
     }
@@ -59,7 +62,7 @@ public final class Tree<S> extends TreeNode<S> {
     public static <S, I extends Comparable<I>> Tree<S> toTree(@NotNull Iterable<S> sortedSources,
                                                               @NotNull Function<S, I> identityFunction,
                                                               @NotNull Function<S, I> parentFunction) {
-        Tree<S> tree = new Tree<>();
+        Tree<S> tree = new Tree<>(identityFunction::apply);
         Map<I, TreeNode<S>> nodeMapping = Maps.newHashMap();
         sortedSources.forEach(source -> nodeMapping.put(identityFunction.apply(source), TreeNode.of(source)));
         nodeMapping.forEach((sourceIdentity, node) -> {
